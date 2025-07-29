@@ -4,6 +4,8 @@ import os
 from aiogram import Bot, Dispatcher
 from dotenv import load_dotenv, find_dotenv
 
+from handlers import handlers_router
+
 load_dotenv(find_dotenv())
 
 async def main():
@@ -11,6 +13,8 @@ async def main():
     bot = Bot(token=token)
 
     dp = Dispatcher()
+
+    dp.include_routers(handlers_router)
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
