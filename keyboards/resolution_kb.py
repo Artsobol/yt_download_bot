@@ -3,9 +3,8 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
 def create_inline_keyboard(
-        width: int,
-        *args: str,
-        **kwargs: str) -> InlineKeyboardMarkup:
+    width: int, *args: str, **kwargs: str
+) -> InlineKeyboardMarkup:
     kb_builder = InlineKeyboardBuilder()
 
     buttons: list[InlineKeyboardButton] = []
@@ -20,4 +19,3 @@ def create_inline_keyboard(
     kb_builder.row(*buttons, width=width)
 
     return kb_builder.as_markup()
-

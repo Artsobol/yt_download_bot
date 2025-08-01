@@ -2,15 +2,18 @@ import asyncio
 import os
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from dotenv import load_dotenv, find_dotenv
 
 from handlers import handlers_router
 
 load_dotenv(find_dotenv())
 
+
 async def main():
     token = os.getenv("TOKEN")
-    bot = Bot(token=token)
+    bot = Bot(token=token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 
     dp = Dispatcher()
 

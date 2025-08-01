@@ -9,6 +9,5 @@ class Itag(Enum):
     P_240 = 133
     P_144 = 160
 
-
     def __str__(self):
         return f"{self.name[2:]}p"
