@@ -9,7 +9,7 @@ from services.ffmpeg_service import ffmpeg_merge_streams
 
 async def merge_streams(video_path: Path | str, audio_path: Path | str, output_file: Path | None = None) -> str:
     if output_file is None:
-        output_file = Path(TEMP_DIR) / f"{video_path.stem}_merged.mp4"
+        output_file = Path(TEMP_DIR) / f"{video_path}_merged.mp4"
 
     merged_video = ffmpeg_merge_streams(video_path, audio_path, output_file)
     return merged_video

@@ -8,18 +8,23 @@ from config.states import DownloadVideoStates
 from keyboards.resolution_kb import create_inline_keyboard
 from services import get_youtube_object, download_video, \
     get_available_itags, check_valid_video_and_audio_size, delete_all, merge_streams, \
-    get_video_and_audio_stream
+    get_video_and_audio_stream, get_thumbnail_url
 
 router = Router()
 
 @router.callback_query(F.data == "url")
 async def get_url(cb: CallbackQuery, state: FSMContext):
-    await cb.message.answer("Отправьте, пожалуйста, ссылку на видео")
+    bot_message = await cb.message.edit_text("Отправьте, пожалуйста, ссылку на видео")
+    await state.update_data(bot_message=bot_message.message_id)
     await state.set_state(DownloadVideoStates.url)
 
 
 @router.message(DownloadVideoStates.url)
 async def choose_resolution(message: Message, state: FSMContext):
+    bot_message = (await state.get_data())["bot_message"]
+    await message.bot.delete_message(chat_id=message.chat.id, message_id=bot_message)
+    await message.delete()
+
     url = message.text
     yt = get_youtube_object(url)
 
@@ -28,11 +33,11 @@ async def choose_resolution(message: Message, state: FSMContext):
     args = [str(itag) for itag in available_itags]
     kb = create_inline_keyboard(2, *args)
 
-    await message.answer("Выберите качество", reply_markup=kb)
+    await message.answer_photo(photo=get_thumbnail_url(yt), caption=f"{yt.title}\n{yt.author}\n\nПожалуйста, выберите качество, в котором хотите получить видео", reply_markup=kb)
     await state.set_state(DownloadVideoStates.resolution)
 
 @router.callback_query(DownloadVideoStates.resolution)
-async def download_chosen_resolution(cb: CallbackQuery, state: FSMContext):
+async def send_video_to_user(cb: CallbackQuery, state: FSMContext):
     data = await state.get_data()
 
     selected_itag = next(i for i in Itag if str(i) == cb.data)
@@ -41,10 +46,13 @@ async def download_chosen_resolution(cb: CallbackQuery, state: FSMContext):
     if not check_valid_video_and_audio_size(video_stream, audio_stream):
         await cb.message.answer("Извините, файл слишком большой, телеграмм мне не позволяет отправить файлы такого размера")
         return
+    await cb.message.delete()
+    temp_message = await cb.message.answer("Пожалуйста, подождите. Начинаю скачивать и отправлять видео")
     video_file_path = await download_video(video_stream)
     audio_file_path = await download_video(audio_stream)
     file_path = await merge_streams(video_file_path, audio_file_path)
 
+    await cb.bot.delete_message(chat_id=cb.message.chat.id, message_id=temp_message.message_id)
     await cb.message.answer_video(video=FSInputFile(file_path))
     await delete_all(video_file_path, audio_file_path, file_path)
 
