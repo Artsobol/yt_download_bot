@@ -7,10 +7,11 @@ BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 TEMP_DIR = os.path.join(BASE_DIR, "tmp")
 os.makedirs(TEMP_DIR, exist_ok=True)
 
+# Путь до ffmpeg
 FFMPEG_PATH = os.path.join(
     BASE_DIR,
-    "bin",      # корневая папка bin вашего проекта
-    "ffmpeg",   # подпапка с распакованным ffmpeg
-    "bin",      # подпапка bin внутри сборки
-    "ffmpeg.exe"  # сам исполняемый файл
+    "bin",
+    "ffmpeg",
+    "bin",
+    "ffmpeg.exe"
 )
