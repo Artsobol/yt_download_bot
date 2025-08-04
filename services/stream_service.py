@@ -15,6 +15,7 @@ def get_video_and_audio_stream(
     return video_stream, audio_stream
 
 
+
 def get_available_itags(yt: YouTube) -> List[Itag]:
     available_itags = {stream.itag for stream in yt.streams.filter(adaptive=True)}
     return [itag for itag in Itag if itag.value in available_itags]

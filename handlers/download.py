@@ -5,7 +5,7 @@ from aiogram.types import Message, CallbackQuery
 
 from config.Itag import Itag
 from config.states import DownloadVideoStates
-from keyboards.resolution_kb import create_inline_keyboard
+from keyboards import KeyboardBuilder
 from lexicon import LEXICON_RU
 from services import (
     get_youtube_object,
@@ -15,7 +15,7 @@ from services import (
     delete_all,
     merge_streams,
     get_video_and_audio_stream,
-    get_thumbnail_url,
+    get_thumbnail_url, get_stream_by_itag,
 )
 
 router = Router()
@@ -40,7 +40,9 @@ async def choose_resolution(message: Message, state: FSMContext):
     await state.update_data(url=yt)
     available_itags = get_available_itags(yt)
     args = [str(itag) for itag in available_itags]
-    kb = create_inline_keyboard(2, *args)
+    kb = KeyboardBuilder()
+    kb.add_buttons(*args).next_row(2)
+    kb.add_buttons(**{"preview": "Получить превью", "audio": "Скачать аудио"}).next_row(2)
 
     await message.answer_photo(
         photo=get_thumbnail_url(yt),
@@ -52,16 +54,38 @@ async def choose_resolution(message: Message, state: FSMContext):
             date=yt.publish_date,
             description=yt.description,
         ),
-        reply_markup=kb,
+        reply_markup=kb.get_keyboard(),
     )
     await state.set_state(DownloadVideoStates.resolution)
 
+@router.callback_query(DownloadVideoStates.resolution, F.data == "preview")
+async def send_preview_to_user(cb: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
 
-@router.callback_query(DownloadVideoStates.resolution)
+    preview = get_thumbnail_url(data["url"])
+    await cb.message.delete()
+    await cb.message.answer_document(document=preview)
+
+    await state.clear()
+
+@router.callback_query(DownloadVideoStates.resolution, F.data == "audio")
+async def send_audio_to_user(cb: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+
+    audio_stream = get_stream_by_itag(data["url"], 140)
+    audio_file_path = await download_video(audio_stream)
+    await cb.message.delete()
+    await cb.message.answer_audio(audio=FSInputFile(audio_file_path))
+
+    await delete_all(audio_file_path)
+    await state.clear()
+
+@router.callback_query(DownloadVideoStates.resolution, ~F.data.in_({"preview", "audio"}))
 async def send_video_to_user(cb: CallbackQuery, state: FSMContext):
     data = await state.get_data()
 
     selected_itag = next(i for i in Itag if str(i) == cb.data)
+    print(selected_itag)
     video_stream, audio_stream = get_video_and_audio_stream(
         data["url"], selected_itag.value
     )
